@@ -29,7 +29,7 @@ if not api_key:
 client = genai.Client(api_key=api_key)
 
 EMBED_MODEL = "gemini-embedding-001"
-CHAT_MODEL = "gemini-flash-latest"
+CHAT_MODEL = "gemini-3.8-flash"
 
 
 def split_text(text, chunk_size=1000, overlap=150):
