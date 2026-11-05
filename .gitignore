@@ -1,4 +1,11 @@
+<<<<<<< HEAD
 .streamlit/secrets.toml
 .env
 __pycache__/
 .venv/
+=======
+.streamlit/secrets.toml
+.env
+__pycache__/
+.venv/
+>>>>>>> ac413b3ddb45420bf58bc50308565b9f8be9cff5
