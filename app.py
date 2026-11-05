@@ -29,7 +29,7 @@ st.set_page_config(
 # ----------------------------------------------------------------------
 
 EMBED_MODEL = "gemini-embedding-001"
-CHAT_MODEL = "gemini-3.8-flash"
+CHAT_MODEL = "gemini-3.5-flash-lite"
 
 MIN_SCORE = 0.25
 
