@@ -913,37 +913,30 @@ def highlight_best_sentence(
 # Generate answer
 # ----------------------------------------------------------------------
 
+
 def stream_answer(
     question,
     sources,
     history,
     style,
 ):
-
     context = "\n\n".join(
         f"[Page {source['page']}] {source['text']}"
         for source in sources
     )
 
     past = "\n".join(
-        f"{message['role'].title()}: "
-        f"{message['content']}"
-
-        for message
-        in history[-6:]
+        f"{message['role'].title()}: {message['content']}"
+        for message in history[-6:]
     )
 
     system = (
-
         "You answer questions about a PDF "
         "using only the supplied context. "
-
         "If the answer is not in the context, "
         "say you cannot find it in the document. "
-
         "Mention page numbers like (p. 3) "
         "when you rely on a passage. "
-
         f"{ANSWER_STYLES[style]}"
     )
 
@@ -953,25 +946,59 @@ def stream_answer(
         f"Question: {question}"
     )
 
-    for piece in client.models.generate_content_stream(
+    max_retries = 4
 
-        model=CHAT_MODEL,
+    for attempt in range(max_retries):
+        received_text = False
 
-        contents=prompt,
+        try:
+            response_stream = client.models.generate_content_stream(
+                model=CHAT_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system,
+                    temperature=0.3,
+                ),
+            )
 
-        config=types.GenerateContentConfig(
+            for piece in response_stream:
+                if piece.text:
+                    received_text = True
+                    yield piece.text
 
-            system_instruction=system,
+            return
 
-            temperature=0.3,
+        except Exception as error:
+            error_message = str(error).upper()
 
-        ),
-    ):
+            retryable = any(
+                code in error_message
+                for code in (
+                    "503",
+                    "UNAVAILABLE",
+                    "429",
+                    "RESOURCE_EXHAUSTED",
+                    "500",
+                    "INTERNAL",
+                )
+            )
 
-        if piece.text:
+            # Do not retry after displaying partial output.
+            if not retryable or received_text:
+                yield (
+                    "\n\nGemini could not complete the response. "
+                    "Please try again later."
+                )
+                return
 
-            yield piece.text
-
+            if attempt < max_retries - 1:
+                wait_seconds = 5 * (2 ** attempt)
+                time.sleep(wait_seconds)
+            else:
+                yield (
+                    "\n\nGemini is currently experiencing "
+                    "high demand. Please try again in a few minutes."
+                )
 
 # ----------------------------------------------------------------------
 # Suggested questions
